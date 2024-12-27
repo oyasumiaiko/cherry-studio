@@ -102,7 +102,8 @@ const SettingsTab: FC<Props> = (props) => {
         maxTokens: DEFAULT_MAX_TOKENS,
         streamOutput: true,
         hideMessages: false,
-        autoResetModel: false
+        autoResetModel: false,
+        customParameters: []
       }
     })
   }
@@ -219,7 +220,7 @@ const SettingsTab: FC<Props> = (props) => {
               <Col span={10}>
                 <Select
                   value={param.type}
-                  onChange={(value: 'string' | 'number' | 'boolean' | 'object' | 'array') => {
+                  onChange={(value: 'string' | 'number' | 'boolean') => {
                     const newParams = [...(assistant?.settings?.customParameters || [])]
                     let defaultValue: any = ''
                     switch (value) {
@@ -228,12 +229,6 @@ const SettingsTab: FC<Props> = (props) => {
                         break
                       case 'boolean':
                         defaultValue = false
-                        break
-                      case 'object':
-                        defaultValue = '{}'
-                        break
-                      case 'array':
-                        defaultValue = '[]'
                         break
                       default:
                         defaultValue = ''
@@ -245,8 +240,6 @@ const SettingsTab: FC<Props> = (props) => {
                   <Select.Option value="string">{t('models.parameter_type.string')}</Select.Option>
                   <Select.Option value="number">{t('models.parameter_type.number')}</Select.Option>
                   <Select.Option value="boolean">{t('models.parameter_type.boolean')}</Select.Option>
-                  <Select.Option value="object">{t('models.parameter_type.object')}</Select.Option>
-                  <Select.Option value="array">{t('models.parameter_type.array')}</Select.Option>
                 </Select>
               </Col>
             </Row>
@@ -277,16 +270,7 @@ const SettingsTab: FC<Props> = (props) => {
                     value={typeof param.value === 'string' ? param.value : JSON.stringify(param.value)}
                     onChange={(e) => {
                       const newParams = [...(assistant?.settings?.customParameters || [])]
-                      if (param.type === 'object' || param.type === 'array') {
-                        try {
-                          const parsed = JSON.parse(e.target.value)
-                          newParams[index] = { ...param, value: parsed }
-                        } catch {
-                          newParams[index] = { ...param, value: e.target.value }
-                        }
-                      } else {
-                        newParams[index] = { ...param, value: e.target.value }
-                      }
+                      newParams[index] = { ...param, value: e.target.value }
                       onUpdateAssistantSettings({ customParameters: newParams })
                     }}
                   />
@@ -525,7 +509,7 @@ const SettingRowTitleSmall = styled(SettingRowTitle)`
   font-size: 13px;
 `
 
-const SettingGroup = styled.div<{ theme?: ThemeMode }>`
+export const SettingGroup = styled.div<{ theme?: ThemeMode }>`
   padding: 10px;
   width: 100%;
   margin-top: 0;

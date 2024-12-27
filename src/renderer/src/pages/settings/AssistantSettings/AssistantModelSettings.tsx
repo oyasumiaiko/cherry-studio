@@ -6,27 +6,9 @@ import { DEFAULT_CONTEXTCOUNT, DEFAULT_TEMPERATURE } from '@renderer/config/cons
 import { SettingRow } from '@renderer/pages/settings'
 import { Assistant, AssistantSettings } from '@renderer/types'
 import { Button, Col, Divider, Input, InputNumber, Row, Select, Slider, Switch, Tooltip } from 'antd'
-import TextArea from 'antd/es/input/TextArea'
 import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
-
-const Container = styled.div`
-  padding: 10px;
-`
-
-const Label = styled.div`
-  font-size: 14px;
-  color: var(--color-text);
-  margin-right: 8px;
-`
-
-const QuestionIcon = styled(QuestionCircleOutlined)`
-  color: var(--color-text-3);
-  font-size: 14px;
-  margin-left: 4px;
-  cursor: pointer;
-`
 
 interface Props {
   assistant: Assistant
@@ -46,8 +28,8 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
   const [customParameters, setCustomParameters] = useState<
     Array<{
       name: string
-      value: string | number | boolean | object | any[]
-      type: 'string' | 'number' | 'boolean' | 'object' | 'array'
+      value: string | number | boolean
+      type: 'string' | 'number' | 'boolean'
     }>
   >(assistant?.settings?.customParameters ?? [])
   const { t } = useTranslation()
@@ -86,11 +68,10 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
   const onUpdateCustomParameter = (
     index: number,
     field: 'name' | 'value' | 'type',
-    value: string | number | boolean | object | any[]
+    value: string | number | boolean
   ) => {
     const newParams = [...customParameters]
     if (field === 'type') {
-      // Reset value when type changes
       let defaultValue: any = ''
       switch (value) {
         case 'number':
@@ -98,12 +79,6 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
           break
         case 'boolean':
           defaultValue = false
-          break
-        case 'object':
-          defaultValue = '{}'
-          break
-        case 'array':
-          defaultValue = '[]'
           break
         default:
           defaultValue = ''
@@ -136,22 +111,6 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
           <Switch
             checked={param.value as boolean}
             onChange={(checked) => onUpdateCustomParameter(index, 'value', checked)}
-          />
-        )
-      case 'object':
-      case 'array':
-        return (
-          <TextArea
-            value={typeof param.value === 'string' ? param.value : JSON.stringify(param.value, null, 2)}
-            onChange={(e) => {
-              try {
-                const parsed = JSON.parse(e.target.value)
-                onUpdateCustomParameter(index, 'value', parsed)
-              } catch {
-                onUpdateCustomParameter(index, 'value', e.target.value)
-              }
-            }}
-            autoSize={{ minRows: 2, maxRows: 6 }}
           />
         )
       default:
@@ -394,8 +353,6 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
               <Select.Option value="string">{t('models.parameter_type.string')}</Select.Option>
               <Select.Option value="number">{t('models.parameter_type.number')}</Select.Option>
               <Select.Option value="boolean">{t('models.parameter_type.boolean')}</Select.Option>
-              <Select.Option value="object">{t('models.parameter_type.object')}</Select.Option>
-              <Select.Option value="array">{t('models.parameter_type.array')}</Select.Option>
             </Select>
           </Col>
           <Col span={11}>{renderParameterValueInput(param, index)}</Col>
@@ -413,5 +370,24 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
     </Container>
   )
 }
+
+const Container = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 5px;
+`
+
+const Label = styled.p`
+  margin-right: 5px;
+  font-weight: 500;
+`
+
+const QuestionIcon = styled(QuestionCircleOutlined)`
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--color-text-3);
+`
 
 export default AssistantModelSettings
