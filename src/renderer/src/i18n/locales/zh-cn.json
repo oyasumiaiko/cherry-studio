@@ -577,7 +577,14 @@
       "dimensions": "{{dimensions}} 维",
       "custom_parameters": "自定义参数",
       "add_parameter": "添加参数",
-      "parameter_name": "参数名称"
+      "parameter_name": "参数名称",
+      "parameter_type": {
+        "string": "文本",
+        "number": "数字",
+        "boolean": "布尔",
+        "object": "对象",
+        "array": "数组"
+      }
     }
   }
 }

@@ -5,7 +5,8 @@ import SelectModelPopup from '@renderer/components/Popups/SelectModelPopup'
 import { DEFAULT_CONTEXTCOUNT, DEFAULT_TEMPERATURE } from '@renderer/config/constant'
 import { SettingRow } from '@renderer/pages/settings'
 import { Assistant, AssistantSettings } from '@renderer/types'
-import { Button, Col, Divider, Input, InputNumber, Row, Slider, Switch, Tooltip } from 'antd'
+import { Button, Col, Divider, Input, InputNumber, Row, Select, Slider, Switch, Tooltip } from 'antd'
+import TextArea from 'antd/es/input/TextArea'
 import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
@@ -42,9 +43,13 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
   const [streamOutput, setStreamOutput] = useState(assistant?.settings?.streamOutput ?? true)
   const [defaultModel, setDefaultModel] = useState(assistant?.defaultModel)
   const [topP, setTopP] = useState(assistant?.settings?.topP ?? 1)
-  const [customParameters, setCustomParameters] = useState<Array<{ name: string; value: number; type: 'number' }>>(
-    assistant?.settings?.customParameters ?? []
-  )
+  const [customParameters, setCustomParameters] = useState<
+    Array<{
+      name: string
+      value: string | number | boolean | object | any[]
+      type: 'string' | 'number' | 'boolean' | 'object' | 'array'
+    }>
+  >(assistant?.settings?.customParameters ?? [])
   const { t } = useTranslation()
 
   const onTemperatureChange = (value) => {
@@ -72,21 +77,91 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
   }
 
   const onAddCustomParameter = () => {
-    const newParam = { name: '', value: 0, type: 'number' as const }
+    const newParam = { name: '', value: '', type: 'string' as const }
     const newParams = [...customParameters, newParam]
     setCustomParameters(newParams)
     updateAssistantSettings({ customParameters: newParams })
   }
 
-  const onUpdateCustomParameter = (index: number, field: 'name' | 'value', value: string | number) => {
+  const onUpdateCustomParameter = (
+    index: number,
+    field: 'name' | 'value' | 'type',
+    value: string | number | boolean | object | any[]
+  ) => {
     const newParams = [...customParameters]
-    newParams[index] = {
-      ...newParams[index],
-      [field]: value,
-      type: 'number' as const
+    if (field === 'type') {
+      // Reset value when type changes
+      let defaultValue: any = ''
+      switch (value) {
+        case 'number':
+          defaultValue = 0
+          break
+        case 'boolean':
+          defaultValue = false
+          break
+        case 'object':
+          defaultValue = '{}'
+          break
+        case 'array':
+          defaultValue = '[]'
+          break
+        default:
+          defaultValue = ''
+      }
+      newParams[index] = {
+        ...newParams[index],
+        type: value as any,
+        value: defaultValue
+      }
+    } else {
+      newParams[index] = { ...newParams[index], [field]: value }
     }
     setCustomParameters(newParams)
     updateAssistantSettings({ customParameters: newParams })
+  }
+
+  const renderParameterValueInput = (param: (typeof customParameters)[0], index: number) => {
+    switch (param.type) {
+      case 'number':
+        return (
+          <InputNumber
+            style={{ width: '100%' }}
+            value={param.value as number}
+            onChange={(value) => onUpdateCustomParameter(index, 'value', value || 0)}
+            step={0.01}
+          />
+        )
+      case 'boolean':
+        return (
+          <Switch
+            checked={param.value as boolean}
+            onChange={(checked) => onUpdateCustomParameter(index, 'value', checked)}
+          />
+        )
+      case 'object':
+      case 'array':
+        return (
+          <TextArea
+            value={typeof param.value === 'string' ? param.value : JSON.stringify(param.value, null, 2)}
+            onChange={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value)
+                onUpdateCustomParameter(index, 'value', parsed)
+              } catch {
+                onUpdateCustomParameter(index, 'value', e.target.value)
+              }
+            }}
+            autoSize={{ minRows: 2, maxRows: 6 }}
+          />
+        )
+      default:
+        return (
+          <Input
+            value={param.value as string}
+            onChange={(e) => onUpdateCustomParameter(index, 'value', e.target.value)}
+          />
+        )
+    }
   }
 
   const onDeleteCustomParameter = (index: number) => {
@@ -304,22 +379,27 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
       </SettingRow>
       {customParameters.map((param, index) => (
         <Row key={index} align="middle" gutter={10} style={{ marginTop: 10 }}>
-          <Col span={8}>
+          <Col span={6}>
             <Input
               placeholder={t('models.parameter_name')}
               value={param.name}
               onChange={(e) => onUpdateCustomParameter(index, 'name', e.target.value)}
             />
           </Col>
-          <Col span={12}>
-            <InputNumber
-              style={{ width: '100%' }}
-              value={param.value}
-              onChange={(value) => onUpdateCustomParameter(index, 'value', value || 0)}
-              step={0.01}
-            />
-          </Col>
           <Col span={4}>
+            <Select
+              value={param.type}
+              onChange={(value) => onUpdateCustomParameter(index, 'type', value)}
+              style={{ width: '100%' }}>
+              <Select.Option value="string">{t('models.parameter_type.string')}</Select.Option>
+              <Select.Option value="number">{t('models.parameter_type.number')}</Select.Option>
+              <Select.Option value="boolean">{t('models.parameter_type.boolean')}</Select.Option>
+              <Select.Option value="object">{t('models.parameter_type.object')}</Select.Option>
+              <Select.Option value="array">{t('models.parameter_type.array')}</Select.Option>
+            </Select>
+          </Col>
+          <Col span={11}>{renderParameterValueInput(param, index)}</Col>
+          <Col span={3}>
             <Button icon={<DeleteOutlined />} onClick={() => onDeleteCustomParameter(index)} danger />
           </Col>
         </Row>
