@@ -1,14 +1,31 @@
-import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons'
+import { DeleteOutlined, PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import ModelAvatar from '@renderer/components/Avatar/ModelAvatar'
 import { HStack } from '@renderer/components/Layout'
 import SelectModelPopup from '@renderer/components/Popups/SelectModelPopup'
 import { DEFAULT_CONTEXTCOUNT, DEFAULT_TEMPERATURE } from '@renderer/config/constant'
 import { SettingRow } from '@renderer/pages/settings'
 import { Assistant, AssistantSettings } from '@renderer/types'
-import { Button, Col, Divider, InputNumber, Row, Slider, Switch, Tooltip } from 'antd'
+import { Button, Col, Divider, Input, InputNumber, Row, Slider, Switch, Tooltip } from 'antd'
 import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
+
+const Container = styled.div`
+  padding: 10px;
+`
+
+const Label = styled.div`
+  font-size: 14px;
+  color: var(--color-text);
+  margin-right: 8px;
+`
+
+const QuestionIcon = styled(QuestionCircleOutlined)`
+  color: var(--color-text-3);
+  font-size: 14px;
+  margin-left: 4px;
+  cursor: pointer;
+`
 
 interface Props {
   assistant: Assistant
@@ -25,6 +42,9 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
   const [streamOutput, setStreamOutput] = useState(assistant?.settings?.streamOutput ?? true)
   const [defaultModel, setDefaultModel] = useState(assistant?.defaultModel)
   const [topP, setTopP] = useState(assistant?.settings?.topP ?? 1)
+  const [customParameters, setCustomParameters] = useState<Array<{ name: string; value: number; type: 'number' }>>(
+    assistant?.settings?.customParameters ?? []
+  )
   const { t } = useTranslation()
 
   const onTemperatureChange = (value) => {
@@ -51,6 +71,30 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
     }
   }
 
+  const onAddCustomParameter = () => {
+    const newParam = { name: '', value: 0, type: 'number' as const }
+    const newParams = [...customParameters, newParam]
+    setCustomParameters(newParams)
+    updateAssistantSettings({ customParameters: newParams })
+  }
+
+  const onUpdateCustomParameter = (index: number, field: 'name' | 'value', value: string | number) => {
+    const newParams = [...customParameters]
+    newParams[index] = {
+      ...newParams[index],
+      [field]: value,
+      type: 'number' as const
+    }
+    setCustomParameters(newParams)
+    updateAssistantSettings({ customParameters: newParams })
+  }
+
+  const onDeleteCustomParameter = (index: number) => {
+    const newParams = customParameters.filter((_, i) => i !== index)
+    setCustomParameters(newParams)
+    updateAssistantSettings({ customParameters: newParams })
+  }
+
   const onReset = () => {
     setTemperature(DEFAULT_TEMPERATURE)
     setContextCount(DEFAULT_CONTEXTCOUNT)
@@ -58,13 +102,15 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
     setMaxTokens(0)
     setStreamOutput(true)
     setTopP(1)
+    setCustomParameters([])
     updateAssistantSettings({
       temperature: DEFAULT_TEMPERATURE,
       contextCount: DEFAULT_CONTEXTCOUNT,
       enableMaxTokens: false,
       maxTokens: 0,
       streamOutput: true,
-      topP: 1
+      topP: 1,
+      customParameters: []
     })
   }
 
@@ -249,6 +295,35 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
           }}
         />
       </SettingRow>
+      <Divider style={{ margin: '10px 0' }} />
+      <SettingRow style={{ minHeight: 30 }}>
+        <Label>{t('models.custom_parameters')}</Label>
+        <Button icon={<PlusOutlined />} onClick={onAddCustomParameter}>
+          {t('models.add_parameter')}
+        </Button>
+      </SettingRow>
+      {customParameters.map((param, index) => (
+        <Row key={index} align="middle" gutter={10} style={{ marginTop: 10 }}>
+          <Col span={8}>
+            <Input
+              placeholder={t('models.parameter_name')}
+              value={param.name}
+              onChange={(e) => onUpdateCustomParameter(index, 'name', e.target.value)}
+            />
+          </Col>
+          <Col span={12}>
+            <InputNumber
+              style={{ width: '100%' }}
+              value={param.value}
+              onChange={(value) => onUpdateCustomParameter(index, 'value', value || 0)}
+              step={0.01}
+            />
+          </Col>
+          <Col span={4}>
+            <Button icon={<DeleteOutlined />} onClick={() => onDeleteCustomParameter(index)} danger />
+          </Col>
+        </Row>
+      ))}
       <Divider style={{ margin: '15px 0' }} />
       <HStack justifyContent="flex-end">
         <Button onClick={onReset} style={{ width: 80 }} danger type="primary">
@@ -258,24 +333,5 @@ const AssistantModelSettings: FC<Props> = ({ assistant, updateAssistant, updateA
     </Container>
   )
 }
-
-const Container = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 5px;
-`
-
-const Label = styled.p`
-  margin-right: 5px;
-  font-weight: 500;
-`
-
-const QuestionIcon = styled(QuestionCircleOutlined)`
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--color-text-3);
-`
 
 export default AssistantModelSettings
