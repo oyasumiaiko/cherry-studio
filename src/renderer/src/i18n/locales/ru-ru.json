@@ -585,7 +585,15 @@
       "embedding": "Встраиваемые модели",
       "embedding_model": "Встраиваемые модели",
       "embedding_model_tooltip": "Добавьте в настройки->модель сервиса->управление",
-      "dimensions": "{{dimensions}} мер"
+      "dimensions": "{{dimensions}} мер",
+      "custom_parameters": "Пользовательские параметры",
+      "add_parameter": "Добавить параметр",
+      "parameter_name": "Имя параметра",
+      "parameter_type": {
+        "string": "Текст",
+        "number": "Число",
+        "boolean": "Логическое"
+      }
     }
   }
 }

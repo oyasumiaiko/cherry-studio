@@ -592,9 +592,7 @@
       "parameter_type": {
         "string": "Text",
         "number": "Number",
-        "boolean": "Boolean",
-        "object": "Object",
-        "array": "Array"
+        "boolean": "Boolean"
       }
     }
   }

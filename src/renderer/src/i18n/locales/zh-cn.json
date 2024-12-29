@@ -581,9 +581,7 @@
       "parameter_type": {
         "string": "文本",
         "number": "数字",
-        "boolean": "布尔",
-        "object": "对象",
-        "array": "数组"
+        "boolean": "布尔值"
       }
     }
   }
