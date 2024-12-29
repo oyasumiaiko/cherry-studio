@@ -148,13 +148,7 @@ export default class OpenAIProvider extends BaseProvider {
       max_tokens: maxTokens,
       keep_alive: this.keepAliveTime,
       stream: isSupportStreamOutput,
-      ...assistant?.settings?.customParameters?.reduce(
-        (acc, param) => ({
-          ...acc,
-          [param.name]: param.value
-        }),
-        {}
-      )
+      ...this.getCustomParameters(assistant)
     })
 
     if (!isSupportStreamOutput) {
