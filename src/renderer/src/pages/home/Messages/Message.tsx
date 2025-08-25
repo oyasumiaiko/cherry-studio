@@ -60,7 +60,6 @@ const MessageItem: FC<Props> = ({
   index,
   hideMenuBar = false,
   isGrouped,
-  isStreaming = false,
   onUpdateUseful,
   isGroupContextMessage
 }) => {
