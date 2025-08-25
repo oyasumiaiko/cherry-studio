@@ -1,4 +1,4 @@
-import { InfoCircleOutlined } from '@ant-design/icons'
+// import { InfoCircleOutlined } from '@ant-design/icons'
 import { loggerService } from '@logger'
 import { CopyIcon, DeleteIcon, EditIcon, RefreshIcon } from '@renderer/components/Icons'
 import ObsidianExportPopup from '@renderer/components/Popups/ObsidianExportPopup'
@@ -40,7 +40,7 @@ import {
   findTranslationBlocksById,
   getMainTextContent
 } from '@renderer/utils/messageUtils/find'
-import { Dropdown, Popconfirm, Tooltip } from 'antd'
+import { Dropdown, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import { AtSign, Check, FilePenLine, Languages, ListChecks, Menu, Save, Split, ThumbsUp, Upload } from 'lucide-react'
 import { FC, memo, useCallback, useMemo, useState } from 'react'
@@ -84,7 +84,7 @@ const MessageMenubar: FC<Props> = (props) => {
   const { toggleMultiSelectMode } = useChatContext(props.topic)
   const [copied, setCopied] = useTemporaryValue(false, 2000)
   const [isTranslating, setIsTranslating] = useState(false)
-  const [showRegenerateTooltip, setShowRegenerateTooltip] = useState(false)
+  // remove confirm for regenerate; tooltip stays simple
   const [showDeleteTooltip, setShowDeleteTooltip] = useState(false)
   const { translateLanguages } = useTranslate()
   // const assistantModel = assistant?.model
@@ -488,22 +488,11 @@ const MessageMenubar: FC<Props> = (props) => {
           </ActionButton>
         </Tooltip>
         {isAssistantMessage && (
-          <Popconfirm
-            title={t('message.regenerate.confirm')}
-            okButtonProps={{ danger: true }}
-            icon={<InfoCircleOutlined style={{ color: 'red' }} />}
-            onConfirm={onRegenerate}
-            onOpenChange={(open) => open && setShowRegenerateTooltip(false)}>
-            <Tooltip
-              title={t('common.regenerate')}
-              mouseEnterDelay={0.8}
-              open={showRegenerateTooltip}
-              onOpenChange={setShowRegenerateTooltip}>
-              <ActionButton className="message-action-button" $softHoverBg={softHoverBg}>
-                <RefreshIcon size={15} />
-              </ActionButton>
-            </Tooltip>
-          </Popconfirm>
+          <Tooltip title={t('common.regenerate')} mouseEnterDelay={0.8}>
+            <ActionButton className="message-action-button" onClick={onRegenerate} $softHoverBg={softHoverBg}>
+              <RefreshIcon size={15} />
+            </ActionButton>
+          </Tooltip>
         )}
         {isAssistantMessage && (
           <Tooltip title={t('message.mention.title')} mouseEnterDelay={0.8}>
@@ -598,25 +587,21 @@ const MessageMenubar: FC<Props> = (props) => {
             </ActionButton>
           </Tooltip>
         )}
-        <Popconfirm
-          title={t('message.message.delete.content')}
-          okButtonProps={{ danger: true }}
-          icon={<InfoCircleOutlined style={{ color: 'red' }} />}
-          onOpenChange={(open) => open && setShowDeleteTooltip(false)}
-          onConfirm={() => deleteMessage(message.id, message.traceId, message.model?.name)}>
-          <ActionButton
-            className="message-action-button"
-            onClick={(e) => e.stopPropagation()}
-            $softHoverBg={softHoverBg}>
-            <Tooltip
-              title={t('common.delete')}
-              mouseEnterDelay={1}
-              open={showDeleteTooltip}
-              onOpenChange={setShowDeleteTooltip}>
-              <DeleteIcon size={15} />
-            </Tooltip>
-          </ActionButton>
-        </Popconfirm>
+        <ActionButton
+          className="message-action-button"
+          onClick={(e) => {
+            e.stopPropagation()
+            deleteMessage(message.id, message.traceId, message.model?.name)
+          }}
+          $softHoverBg={softHoverBg}>
+          <Tooltip
+            title={t('common.delete')}
+            mouseEnterDelay={1}
+            open={showDeleteTooltip}
+            onOpenChange={setShowDeleteTooltip}>
+            <DeleteIcon size={15} />
+          </Tooltip>
+        </ActionButton>
         {enableDeveloperMode && message.traceId && (
           <Tooltip title={t('trace.label')} mouseEnterDelay={0.8}>
             <ActionButton className="message-action-button" onClick={() => handleTraceUserMessage()}>
