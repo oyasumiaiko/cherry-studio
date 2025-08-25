@@ -116,7 +116,7 @@ const MessageItem: FC<Props> = ({
 
   const isLastMessage = index === 0 || !!isGrouped
   const isAssistantMessage = message.role === 'assistant'
-  const showMenubar = !hideMenuBar && !isStreaming && !message.status.includes('ing') && !isEditing
+  const showMenubar = !hideMenuBar && !isEditing
 
   const messageHighlightHandler = useCallback(
     (highlight: boolean = true) => {
