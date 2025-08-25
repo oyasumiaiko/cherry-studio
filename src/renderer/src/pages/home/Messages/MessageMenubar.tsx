@@ -7,7 +7,7 @@ import SelectModelPopup from '@renderer/components/Popups/SelectModelPopup'
 import { isVisionModel } from '@renderer/config/models'
 import { useMessageEditing } from '@renderer/context/MessageEditingContext'
 import { useChatContext } from '@renderer/hooks/useChatContext'
-import { useMessageOperations, useTopicLoading } from '@renderer/hooks/useMessageOperations'
+import { useMessageOperations } from '@renderer/hooks/useMessageOperations'
 import { useEnableDeveloperMode, useMessageStyle } from '@renderer/hooks/useSettings'
 import { useTemporaryValue } from '@renderer/hooks/useTemporaryValue'
 import useTranslate from '@renderer/hooks/useTranslate'
@@ -97,7 +97,7 @@ const MessageMenubar: FC<Props> = (props) => {
   const { isBubbleStyle } = useMessageStyle()
   const { enableDeveloperMode } = useEnableDeveloperMode()
 
-  const loading = useTopicLoading(topic)
+  // const loading = useTopicLoading(topic)
 
   const isUserMessage = message.role === 'user'
 
@@ -142,21 +142,18 @@ const MessageMenubar: FC<Props> = (props) => {
   )
 
   const onNewBranch = useCallback(async () => {
-    if (loading) return
     EventEmitter.emit(EVENT_NAMES.NEW_BRANCH, index)
     window.message.success({ content: t('chat.message.new.branch.created'), key: 'new-branch' })
-  }, [index, t, loading])
+  }, [index, t])
 
   const handleResendUserMessage = useCallback(
     async (messageUpdate?: Message) => {
-      if (!loading) {
-        const assistantWithTopicPrompt = topic.prompt
-          ? { ...assistant, prompt: `${assistant.prompt}\n${topic.prompt}` }
-          : assistant
-        await resendMessage(messageUpdate ?? message, assistantWithTopicPrompt)
-      }
+      const assistantWithTopicPrompt = topic.prompt
+        ? { ...assistant, prompt: `${assistant.prompt}\n${topic.prompt}` }
+        : assistant
+      await resendMessage(messageUpdate ?? message, assistantWithTopicPrompt)
     },
-    [assistant, loading, message, resendMessage, topic.prompt]
+    [assistant, message, resendMessage, topic.prompt]
   )
 
   const { startEditing } = useMessageEditing()
@@ -373,7 +370,6 @@ const MessageMenubar: FC<Props> = (props) => {
 
   const onRegenerate = async (e: React.MouseEvent | undefined) => {
     e?.stopPropagation?.()
-    if (loading) return
     // No need to reset or edit the message anymore
     // const selectedModel = isGrouped ? model : assistantModel
     // const _message = resetAssistantMessage(message, selectedModel)
@@ -421,12 +417,11 @@ const MessageMenubar: FC<Props> = (props) => {
   const onMentionModel = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation()
-      if (loading) return
       const selectedModel = await SelectModelPopup.show({ model, modelFilter: mentionModelFilter })
       if (!selectedModel) return
       appendAssistantResponse(message, selectedModel, { ...assistant, model: selectedModel })
     },
-    [appendAssistantResponse, assistant, loading, mentionModelFilter, message, model]
+    [appendAssistantResponse, assistant, mentionModelFilter, message, model]
   )
 
   const onUseful = useCallback(
