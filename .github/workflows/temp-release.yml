@@ -1,0 +1,227 @@
+name: Temporary Release Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '临时版本号 (如: temp-1.0.0)'
+        required: true
+        default: 'temp-1.0.0'
+      description:
+        description: '版本描述'
+        required: false
+        default: '临时构建版本'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: macos-latest dependencies fix
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install python-setuptools
+
+      - name: Install corepack
+        run: corepack enable && corepack prepare yarn@4.6.0 --activate
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.yarn-cache-dir-path.outputs.dir }}
+            node_modules
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install Dependencies
+        run: yarn install
+
+      - name: Build Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get install -y rpm
+          yarn build:npm linux
+          yarn build:linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RENDERER_VITE_AIHUBMIX_SECRET: ${{ vars.RENDERER_VITE_AIHUBMIX_SECRET || '' }}
+          NODE_OPTIONS: --max-old-space-size=8192
+
+      - name: Build Mac
+        if: matrix.os == 'macos-latest'
+        run: |
+          yarn build:npm mac
+          yarn build:mac
+        env:
+          # Skip code signing for temporary releases
+          CSC_IDENTITY_AUTO: false
+          CSC_FOR_PULL_REQUEST: true
+          RENDERER_VITE_AIHUBMIX_SECRET: ${{ vars.RENDERER_VITE_AIHUBMIX_SECRET || '' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: --max-old-space-size=8192
+
+      - name: Build Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          yarn build:npm windows
+          yarn build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RENDERER_VITE_AIHUBMIX_SECRET: ${{ vars.RENDERER_VITE_AIHUBMIX_SECRET || '' }}
+          NODE_OPTIONS: --max-old-space-size=8192
+
+      - name: Rename artifacts with temp version
+        shell: bash
+        run: |
+          mkdir -p renamed-artifacts
+          VERSION="${{ github.event.inputs.version }}"
+
+          # Windows artifacts
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            find dist -name "*-x64-setup.exe" -exec cp {} renamed-artifacts/cherry-studio-${VERSION}-x64-setup.exe \;
+            find dist -name "*-arm64-setup.exe" -exec cp {} renamed-artifacts/cherry-studio-${VERSION}-arm64-setup.exe \;
+            find dist -name "*-x64-portable.exe" -exec cp {} renamed-artifacts/cherry-studio-${VERSION}-x64-portable.exe \;
+            find dist -name "*-arm64-portable.exe" -exec cp {} renamed-artifacts/cherry-studio-${VERSION}-arm64-portable.exe \;
+          fi
+
+          # macOS artifacts
+          if [ "${{ matrix.os }}" == "macos-latest" ]; then
+            find dist -name "*-arm64.dmg" -exec cp {} renamed-artifacts/cherry-studio-${VERSION}-arm64.dmg \;
+            find dist -name "*-x64.dmg" -exec cp {} renamed-artifacts/cherry-studio-${VERSION}-x64.dmg \;
+          fi
+
+          # Linux artifacts
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            find dist -name "*-x86_64.AppImage" -exec cp {} renamed-artifacts/cherry-studio-${VERSION}-x86_64.AppImage \;
+            find dist -name "*-arm64.AppImage" -exec cp {} renamed-artifacts/cherry-studio-${VERSION}-arm64.AppImage \;
+          fi
+
+          # Copy update files
+          cp dist/latest*.yml renamed-artifacts/ || true
+
+      # Generate SHA256 checksums (Windows)
+      - name: Generate SHA256 checksums (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cd renamed-artifacts
+          echo "# SHA256 checksums for Windows - $(Get-Date -Format 'yyyy-MM-dd')" > SHA256SUMS.txt
+          Get-ChildItem -File | Where-Object { $_.Name -ne 'SHA256SUMS.txt' } | ForEach-Object {
+            $file = $_.Name
+            $hash = (Get-FileHash -Algorithm SHA256 $file).Hash.ToLower()
+            Add-Content -Path SHA256SUMS.txt -Value "$hash  $file"
+          }
+          cat SHA256SUMS.txt
+
+      # Generate SHA256 checksums (macOS/Linux)
+      - name: Generate SHA256 checksums (macOS/Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          cd renamed-artifacts
+          echo "# SHA256 checksums for ${{ runner.os }} - $(date +'%Y-%m-%d')" > SHA256SUMS.txt
+          if command -v shasum &>/dev/null; then
+            # macOS
+            shasum -a 256 * 2>/dev/null | grep -v SHA256SUMS.txt >> SHA256SUMS.txt || echo "No files to hash" >> SHA256SUMS.txt
+          else
+            # Linux
+            sha256sum * 2>/dev/null | grep -v SHA256SUMS.txt >> SHA256SUMS.txt || echo "No files to hash" >> SHA256SUMS.txt
+          fi
+          cat SHA256SUMS.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cherry-studio-${{ github.event.inputs.version }}-${{ matrix.os }}
+          path: renamed-artifacts/*
+          retention-days: 90
+
+  create-release:
+    name: Create Temporary Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          merge-multiple: false
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: Cherry Studio ${{ github.event.inputs.version }}
+          body: |
+            ## 🚀 临时构建版本
+
+            **版本**: ${{ github.event.inputs.version }}
+            **构建时间**: $(date +'%Y-%m-%d %H:%M:%S')
+            **描述**: ${{ github.event.inputs.description }}
+
+            ### ⚠️ 注意事项
+            - 这是一个临时构建版本，仅供测试使用
+            - 建议在生产环境中使用正式发布版本
+            - 安装前请务必备份重要数据
+
+            ### 📦 下载
+            请根据您的操作系统选择对应的安装包：
+
+            - **Windows**: `.exe` 安装包或便携版
+            - **macOS**: `.dmg` 文件（可能需要允许运行未签名应用）
+            - **Linux**: `.AppImage` 文件
+
+            ### 🔍 文件完整性
+            每个平台的安装包都包含 SHA256 校验和文件，请在下载后验证文件完整性。
+
+            ---
+
+            ## 🚀 Temporary Build Version
+
+            **Version**: ${{ github.event.inputs.version }}
+            **Build Time**: $(date +'%Y-%m-%d %H:%M:%S')
+            **Description**: ${{ github.event.inputs.description }}
+
+            ### ⚠️ Important Notes
+            - This is a temporary build version for testing purposes only
+            - It's recommended to use official releases in production environments
+            - Please backup important data before installation
+
+            ### 📦 Downloads
+            Please select the appropriate installation package for your operating system:
+
+            - **Windows**: `.exe` installer or portable version
+            - **macOS**: `.dmg` file (may need to allow unsigned applications)
+            - **Linux**: `.AppImage` file
+
+            ### 🔍 File Integrity
+            Each platform's installation packages include SHA256 checksum files. Please verify file integrity after download.
+          files: artifacts/**/*
+          draft: false
+          prerelease: true
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
