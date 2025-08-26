@@ -3347,6 +3347,8 @@
         "label": "グリッド詳細トリガー"
       },
       "input": {
+        "confirm_delete_message": "メッセージ削除前に確認",
+        "confirm_regenerate_message": "メッセージ再生成前に確認",
         "enable_quick_triggers": "/ と @ を有効にしてクイックメニューを表示します。",
         "paste_long_text_as_file": "長いテキストをファイルとして貼り付け",
         "paste_long_text_threshold": "長いテキストの長さ",

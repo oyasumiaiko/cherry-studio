@@ -3347,6 +3347,8 @@
         "label": "Grid detail trigger"
       },
       "input": {
+        "confirm_delete_message": "Confirm before deleting messages",
+        "confirm_regenerate_message": "Confirm before regenerating messages",
         "enable_quick_triggers": "Enable / and @ triggers",
         "paste_long_text_as_file": "Paste long text as file",
         "paste_long_text_threshold": "Paste long text length",

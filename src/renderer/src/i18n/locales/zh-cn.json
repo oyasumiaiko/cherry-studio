@@ -3347,6 +3347,8 @@
         "label": "网格详情触发"
       },
       "input": {
+        "confirm_delete_message": "删除消息前确认",
+        "confirm_regenerate_message": "重新生成消息前确认",
         "enable_quick_triggers": "启用 / 和 @ 触发快捷菜单",
         "paste_long_text_as_file": "长文本粘贴为文件",
         "paste_long_text_threshold": "长文本长度",
