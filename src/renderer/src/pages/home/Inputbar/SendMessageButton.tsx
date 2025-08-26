@@ -1,23 +1,17 @@
-import { FC, MouseEvent } from 'react'
+import { FC } from 'react'
 
 interface Props {
   disabled: boolean
   sendMessage: () => void
-  onPause?: () => void
 }
 
-const SendMessageButton: FC<Props> = ({ disabled, sendMessage, onPause }) => {
-  const handleContextMenu = (e: MouseEvent) => {
-    e.preventDefault()
-    onPause?.()
-  }
+const SendMessageButton: FC<Props> = ({ disabled, sendMessage }) => {
   return (
     <i
       className="iconfont icon-ic_send"
       onClick={sendMessage}
-      onContextMenu={handleContextMenu}
       style={{
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
         color: disabled ? 'var(--color-text-3)' : 'var(--color-primary)',
         fontSize: 22,
         transition: 'all 0.2s',
