@@ -8,7 +8,7 @@ import { isVisionModel } from '@renderer/config/models'
 import { useMessageEditing } from '@renderer/context/MessageEditingContext'
 import { useChatContext } from '@renderer/hooks/useChatContext'
 import { useMessageOperations } from '@renderer/hooks/useMessageOperations'
-import { useEnableDeveloperMode, useMessageStyle } from '@renderer/hooks/useSettings'
+import { useEnableDeveloperMode, useMessageStyle, useSettings } from '@renderer/hooks/useSettings'
 import { useTemporaryValue } from '@renderer/hooks/useTemporaryValue'
 import useTranslate from '@renderer/hooks/useTranslate'
 import { EVENT_NAMES, EventEmitter } from '@renderer/services/EventService'
@@ -38,7 +38,7 @@ import {
   findTranslationBlocksById,
   getMainTextContent
 } from '@renderer/utils/messageUtils/find'
-import { Dropdown, Tooltip } from 'antd'
+import { Dropdown, Popconfirm, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import { AtSign, Check, FilePenLine, Languages, ListChecks, Menu, Save, Split, ThumbsUp, Upload } from 'lucide-react'
 import { FC, memo, useCallback, useMemo, useState } from 'react'
@@ -96,6 +96,7 @@ const MessageMenubar: FC<Props> = (props) => {
 
   const { isBubbleStyle } = useMessageStyle()
   const { enableDeveloperMode } = useEnableDeveloperMode()
+  const { confirmDeleteMessage, confirmRegenerateMessage } = useSettings()
 
   // const loading = useTopicLoading(topic)
 
@@ -470,13 +471,29 @@ const MessageMenubar: FC<Props> = (props) => {
             {copied && <Check size={15} color="var(--color-primary)" />}
           </ActionButton>
         </Tooltip>
-        {isAssistantMessage && (
-          <Tooltip title={t('common.regenerate')} mouseEnterDelay={0.8}>
-            <ActionButton className="message-action-button" onClick={onRegenerate} $softHoverBg={softHoverBg}>
-              <RefreshIcon size={15} />
-            </ActionButton>
-          </Tooltip>
-        )}
+        {isAssistantMessage &&
+          (confirmRegenerateMessage ? (
+            <Popconfirm
+              title={t('message.regenerate.confirm')}
+              okButtonProps={{ danger: true }}
+              onConfirm={onRegenerate}
+              onOpenChange={(open) => open && setShowDeleteTooltip(false)}>
+              <Tooltip title={t('common.regenerate')} mouseEnterDelay={0.8}>
+                <ActionButton
+                  className="message-action-button"
+                  onClick={(e) => e.stopPropagation()}
+                  $softHoverBg={softHoverBg}>
+                  <RefreshIcon size={15} />
+                </ActionButton>
+              </Tooltip>
+            </Popconfirm>
+          ) : (
+            <Tooltip title={t('common.regenerate')} mouseEnterDelay={0.8}>
+              <ActionButton className="message-action-button" onClick={onRegenerate} $softHoverBg={softHoverBg}>
+                <RefreshIcon size={15} />
+              </ActionButton>
+            </Tooltip>
+          ))}
         {isAssistantMessage && (
           <Tooltip title={t('message.mention.title')} mouseEnterDelay={0.8}>
             <ActionButton className="message-action-button" onClick={onMentionModel} $softHoverBg={softHoverBg}>
@@ -570,21 +587,42 @@ const MessageMenubar: FC<Props> = (props) => {
             </ActionButton>
           </Tooltip>
         )}
-        <ActionButton
-          className="message-action-button"
-          onClick={(e) => {
-            e.stopPropagation()
-            deleteMessage(message.id, message.traceId, message.model?.name)
-          }}
-          $softHoverBg={softHoverBg}>
-          <Tooltip
-            title={t('common.delete')}
-            mouseEnterDelay={1}
-            open={showDeleteTooltip}
-            onOpenChange={setShowDeleteTooltip}>
-            <DeleteIcon size={15} />
-          </Tooltip>
-        </ActionButton>
+        {confirmDeleteMessage ? (
+          <Popconfirm
+            title={t('message.message.delete.content')}
+            okButtonProps={{ danger: true }}
+            onConfirm={() => deleteMessage(message.id, message.traceId, message.model?.name)}
+            onOpenChange={(open) => open && setShowDeleteTooltip(false)}>
+            <ActionButton
+              className="message-action-button"
+              onClick={(e) => e.stopPropagation()}
+              $softHoverBg={softHoverBg}>
+              <Tooltip
+                title={t('common.delete')}
+                mouseEnterDelay={1}
+                open={showDeleteTooltip}
+                onOpenChange={setShowDeleteTooltip}>
+                <DeleteIcon size={15} />
+              </Tooltip>
+            </ActionButton>
+          </Popconfirm>
+        ) : (
+          <ActionButton
+            className="message-action-button"
+            onClick={(e) => {
+              e.stopPropagation()
+              deleteMessage(message.id, message.traceId, message.model?.name)
+            }}
+            $softHoverBg={softHoverBg}>
+            <Tooltip
+              title={t('common.delete')}
+              mouseEnterDelay={1}
+              open={showDeleteTooltip}
+              onOpenChange={setShowDeleteTooltip}>
+              <DeleteIcon size={15} />
+            </Tooltip>
+          </ActionButton>
+        )}
         {enableDeveloperMode && message.traceId && (
           <Tooltip title={t('trace.label')} mouseEnterDelay={0.8}>
             <ActionButton className="message-action-button" onClick={() => handleTraceUserMessage()}>
