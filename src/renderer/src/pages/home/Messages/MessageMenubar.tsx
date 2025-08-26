@@ -448,16 +448,32 @@ const MessageMenubar: FC<Props> = (props) => {
       {showMessageTokens && <MessageTokens message={message} />}
       <MenusBar
         className={classNames({ menubar: true, show: isLastMessage, 'user-bubble-style': isUserBubbleStyleMessage })}>
-        {message.role === 'user' && (
-          <Tooltip title={t('common.regenerate')} mouseEnterDelay={0.8}>
-            <ActionButton
-              className="message-action-button"
-              onClick={() => handleResendUserMessage()}
-              $softHoverBg={isBubbleStyle}>
-              <RefreshIcon size={15} />
-            </ActionButton>
-          </Tooltip>
-        )}
+        {message.role === 'user' &&
+          (confirmRegenerateMessage ? (
+            <Popconfirm
+              title={t('message.regenerate.confirm')}
+              okButtonProps={{ danger: true }}
+              onConfirm={() => handleResendUserMessage()}
+              onOpenChange={(open) => open && setShowDeleteTooltip(false)}>
+              <Tooltip title={t('common.regenerate')} mouseEnterDelay={0.8}>
+                <ActionButton
+                  className="message-action-button"
+                  onClick={(e) => e.stopPropagation()}
+                  $softHoverBg={isBubbleStyle}>
+                  <RefreshIcon size={15} />
+                </ActionButton>
+              </Tooltip>
+            </Popconfirm>
+          ) : (
+            <Tooltip title={t('common.regenerate')} mouseEnterDelay={0.8}>
+              <ActionButton
+                className="message-action-button"
+                onClick={() => handleResendUserMessage()}
+                $softHoverBg={isBubbleStyle}>
+                <RefreshIcon size={15} />
+              </ActionButton>
+            </Tooltip>
+          ))}
         {message.role === 'user' && (
           <Tooltip title={t('common.edit')} mouseEnterDelay={0.8}>
             <ActionButton className="message-action-button" onClick={onEdit} $softHoverBg={softHoverBg}>
