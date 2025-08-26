@@ -48,11 +48,11 @@ import {
 } from '@renderer/utils/input'
 import { documentExts, imageExts, textExts } from '@shared/config/constant'
 import { IpcChannel } from '@shared/IpcChannel'
-import { Button } from 'antd'
+import { Button, Tooltip } from 'antd'
 import TextArea, { TextAreaRef } from 'antd/es/input/TextArea'
 import dayjs from 'dayjs'
 import { debounce, isEmpty } from 'lodash'
-import { FileSearch, FileText, Upload } from 'lucide-react'
+import { CirclePause, FileSearch, FileText, Upload } from 'lucide-react'
 import React, { CSSProperties, FC, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
@@ -931,7 +931,14 @@ const Inputbar: FC<Props> = ({ assistant: _assistant, setActiveTopic, topic }) =
                 onClick={onNewContext}
               />
               <TranslateButton text={text} onTranslated={onTranslated} isLoading={isTranslating} />
-              <SendMessageButton sendMessage={sendMessage} disabled={inputEmpty} onPause={onPause} />
+              <SendMessageButton sendMessage={sendMessage} disabled={inputEmpty} />
+              {loading && (
+                <Tooltip placement="top" title={t('chat.input.pause')} mouseLeaveDelay={0} arrow>
+                  <ToolbarButton type="text" onClick={onPause} style={{ marginRight: -2 }}>
+                    <CirclePause size={20} color="var(--color-error)" />
+                  </ToolbarButton>
+                </Tooltip>
+              )}
             </ToolbarMenu>
           </Toolbar>
         </InputBarContainer>
