@@ -9,6 +9,8 @@ export * from './file'
 import type { FileMetadata } from './file'
 import type { Message } from './newMessage'
 
+export * from './ocr'
+
 export type Assistant = {
   id: string
   name: string
@@ -65,7 +67,8 @@ const ThinkModelTypes = [
   'doubao_no_auto',
   'hunyuan',
   'zhipu',
-  'perplexity'
+  'perplexity',
+  'deepseek_hybrid'
 ] as const
 
 export type ReasoningEffortOption = NonNullable<OpenAI.ReasoningEffort> | 'auto'
