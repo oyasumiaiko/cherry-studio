@@ -152,7 +152,7 @@ const MessageMenubar: FC<Props> = (props) => {
 
   const handleResendUserMessage = useCallback(
     async (messageUpdate?: Message) => {
-        await resendMessage(messageUpdate ?? message, assistant)
+      await resendMessage(messageUpdate ?? message, assistant)
     },
     [assistant, message, resendMessage]
   )
