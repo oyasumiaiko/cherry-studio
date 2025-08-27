@@ -258,7 +258,7 @@ const Inputbar: FC<Props> = ({ assistant: _assistant, setActiveTopic, topic }) =
       logger.warn('Failed to send message:', error as Error)
       parent?.recordException(error as Error)
     }
-  }, [assistant, dispatch, files, inputEmpty, loading, mentionedModels, resizeTextArea, setTimeoutTimer, text, topic])
+  }, [assistant, dispatch, files, inputEmpty, mentionedModels, resizeTextArea, setTimeoutTimer, text, topic])
 
   const translate = useCallback(async () => {
     if (isTranslating) {

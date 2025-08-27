@@ -151,7 +151,7 @@ const MessageMenubar: FC<Props> = (props) => {
     async (messageUpdate?: Message) => {
       await resendMessage(messageUpdate ?? message, assistant)
     },
-    [assistant, message, resendMessage, topic.prompt]
+    [assistant, message, resendMessage]
   )
 
   const { startEditing } = useMessageEditing()
